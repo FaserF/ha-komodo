@@ -21,3 +21,10 @@ jobs:
     steps:
         - uses: "actions/checkout@v4"
         - uses: "home-assistant/actions/hassfest@master"
+
+      - name: Check Quality Scale
+        run: |
+          if [ -f script/check_quality_scale.py ]; then
+            pip install probatio packaging
+            python script/check_quality_scale.py
+          fi
