@@ -1,7 +1,7 @@
 from komodo_api.types import (
-    ResourceListItem,
     BuildListItemInfo,
     BuildState,
+    ResourceListItem,
 )
 
 

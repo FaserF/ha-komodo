@@ -1,7 +1,8 @@
-from ..coordinator import KomodoCoordinator
-from .common import KomodoSensor, KomodoOptionSensor, KomodoEntity
 from komodo_api.types import StackState
+
+from ..coordinator import KomodoCoordinator
 from ..utils import create_stack_device_info
+from .common import KomodoOptionSensor, KomodoSensor
 
 
 def create_stack_sensors(
@@ -21,11 +22,13 @@ def create_stack_sensors(
 
         def extractor(data, sid=stack.id):
             stk = data.get_stack(sid)
+            if stk is None or stk.state is None:
+                return StackState.UNKNOWN.name
             return stk.state.name
 
         def joiner(data, sid=stack.id):
             stk = data.get_stack(sid)
-            if stk.alerts:
+            if stk and stk.alerts:
                 return ", ".join(stk.alerts)
             return ""
 

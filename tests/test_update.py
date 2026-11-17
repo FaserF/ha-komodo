@@ -119,5 +119,7 @@ def test_update_entity_release_notes_fallback():
     notes = entity.release_notes()
     assert notes is not None
     assert "Update available for tailscale" in notes
-    assert "[View Changelog / Release Notes](https://hub.docker.com/r/tailscale/tailscale/tags)" in notes
-
+    assert (
+        "[View Changelog / Release Notes](https://hub.docker.com/r/tailscale/tailscale/tags)"
+        in notes
+    )

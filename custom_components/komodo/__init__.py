@@ -4,7 +4,7 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
@@ -45,6 +45,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     komodo.container_categories = enabled_container_categories(entry.options)
     hass.data[DOMAIN][entry.entry_id] = komodo
     await komodo.coordinator.async_config_entry_first_refresh()
+
+    # Clean up obsolete or orphaned devices and entities from earlier versions
+    _async_cleanup_obsolete_entities(hass, entry.entry_id)
 
     # Register the main Komodo device and server devices up front, so the stack
     # devices of all platforms can reference them via their device registry id.
@@ -121,6 +124,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     return unload_ok
 
+
 async def async_remove_config_entry_device(
     hass: HomeAssistant, config_entry: ConfigEntry, device_entry: dr.DeviceEntry
 ) -> bool:
@@ -131,6 +135,32 @@ async def async_remove_config_entry_device(
         device_entry.id,
         include_disabled_entities=True,
     )
-    return not any(
-        entity.config_entry_id == config_entry.entry_id for entity in entities
-    )
+    return not any(entity.config_entry_id == config_entry.entry_id for entity in entities)
+
+
+@callback
+def _async_cleanup_obsolete_entities(hass: HomeAssistant, entry_id: str) -> None:
+    """Clean up obsolete or orphaned devices and entities from previous versions."""
+    device_reg = dr.async_get(hass)
+    entity_reg = er.async_get(hass)
+
+    # Clean up obsolete entities
+    for entity in list(er.async_entries_for_config_entry(entity_reg, entry_id)):
+        uid = entity.unique_id
+        # Obsolete empty server entities, e.g. <entry_id>__server_state
+        if f"{entry_id}__" in uid:
+            _LOGGER.info("Removing obsolete empty server entity %s (%s)", entity.entity_id, uid)
+            entity_reg.async_remove(entity.entity_id)
+        # Obsolete old-style procedure button entities <entry_id>_button_<id>
+        elif "_button_6a" in uid:
+            _LOGGER.info("Removing obsolete procedure button entity %s (%s)", entity.entity_id, uid)
+            entity_reg.async_remove(entity.entity_id)
+
+    # Clean up phantom Unknown Server devices
+    for device in list(dr.async_entries_for_config_entry(device_reg, entry_id)):
+        has_empty_ident = any(
+            ident[0] == DOMAIN and (not ident[1] or ident[1] == "") for ident in device.identifiers
+        )
+        if has_empty_ident or (device.name and device.name.strip().startswith("Unknown Server")):
+            _LOGGER.info("Removing obsolete phantom server device %s (%s)", device.name, device.id)
+            device_reg.async_remove_device(device.id)

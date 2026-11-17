@@ -1,16 +1,17 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
 
+from custom_components.komodo.base import KomodoBase
 from custom_components.komodo.const import DOMAIN
 from custom_components.komodo.services import (
+    SERVICE_GLOBAL_AUTO_UPDATE,
     SERVICE_PRUNE_DOCKER,
     SERVICE_RESTART_ALL_CONTAINERS,
-    SERVICE_GLOBAL_AUTO_UPDATE,
     async_setup_services,
     async_unload_services,
 )
-from custom_components.komodo.base import KomodoBase
 
 
 @pytest.fixture

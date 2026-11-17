@@ -15,53 +15,65 @@ from custom_components.komodo.utils import (
 )
 
 
-@pytest.mark.parametrize("input_host,expected", [
-    ("http://192.168.1.1", "http://192.168.1.1"),
-    ("https://example.com", "https://example.com"),
-    ("192.168.1.1", "http://192.168.1.1"),
-    ("example.com", "https://example.com"),
-    ("192.168.1.1/", "http://192.168.1.1"),
-    ("example.com/", "https://example.com"),
-    ("http://example.com/", "http://example.com"),
-    ("https://192.168.1.1/", "https://192.168.1.1"),
-])
+@pytest.mark.parametrize(
+    "input_host,expected",
+    [
+        ("http://192.168.1.1", "http://192.168.1.1"),
+        ("https://example.com", "https://example.com"),
+        ("192.168.1.1", "http://192.168.1.1"),
+        ("example.com", "https://example.com"),
+        ("192.168.1.1/", "http://192.168.1.1"),
+        ("example.com/", "https://example.com"),
+        ("http://example.com/", "http://example.com"),
+        ("https://192.168.1.1/", "https://192.168.1.1"),
+    ],
+)
 def test_fix_host(input_host, expected):
     assert fix_host(input_host) == expected
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("12.5MiB", 12.5 * 1024**2),
-    ("1.2kB", 1200),
-    ("0B", 0),
-    ("3GB", 3 * 1000**3),
-    ("1.5GiB", 1.5 * 1024**3),
-    ("--", None),
-    ("", None),
-    (None, None),
-    ("12XB", None),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("12.5MiB", 12.5 * 1024**2),
+        ("1.2kB", 1200),
+        ("0B", 0),
+        ("3GB", 3 * 1000**3),
+        ("1.5GiB", 1.5 * 1024**3),
+        ("--", None),
+        ("", None),
+        (None, None),
+        ("12XB", None),
+    ],
+)
 def test_parse_docker_size(text, expected):
     assert parse_docker_size(text) == expected
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("1.2kB / 3.4MB", ("1.2kB", "3.4MB")),
-    ("12MiB / 1.9GiB", ("12MiB", "1.9GiB")),
-    ("--", (None, None)),
-    (None, (None, None)),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("1.2kB / 3.4MB", ("1.2kB", "3.4MB")),
+        ("12MiB / 1.9GiB", ("12MiB", "1.9GiB")),
+        ("--", (None, None)),
+        (None, (None, None)),
+    ],
+)
 def test_split_docker_pair(text, expected):
     assert split_docker_pair(text) == expected
 
 
-@pytest.mark.parametrize("text,expected", [
-    ("1.23%", 1.23),
-    ("250.5%", 250.5),
-    ("0.00%", 0.0),
-    ("--", None),
-    ("", None),
-    (None, None),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("1.23%", 1.23),
+        ("250.5%", 250.5),
+        ("0.00%", 0.0),
+        ("--", None),
+        ("", None),
+        (None, None),
+    ],
+)
 def test_parse_docker_percent(text, expected):
     assert parse_docker_percent(text) == expected
 
@@ -70,7 +82,10 @@ def test_parse_docker_percent(text, expected):
     "raw_img,expected",
     [
         ("docker:29-dind", "docker:29-dind"),
-        ("ghcr.io/moghtech/komodo-core:${COMPOSE_KOMODO_IMAGE_TAG:-2}", "ghcr.io/moghtech/komodo-core:2"),
+        (
+            "ghcr.io/moghtech/komodo-core:${COMPOSE_KOMODO_IMAGE_TAG:-2}",
+            "ghcr.io/moghtech/komodo-core:2",
+        ),
         ("redis:${REDIS_TAG}", "redis:"),
         ("", ""),
         (None, ""),
@@ -97,7 +112,11 @@ def test_extract_version_from_labels():
 
 def test_extract_version_from_env():
     # dind specific
-    env_dind = ["DOCKER_VERSION=29.9.1", "DOCKER_BUILDX_VERSION=0.38.0", "DOCKER_COMPOSE_VERSION=5.6.0"]
+    env_dind = [
+        "DOCKER_VERSION=29.9.1",
+        "DOCKER_BUILDX_VERSION=0.38.0",
+        "DOCKER_COMPOSE_VERSION=5.6.0",
+    ]
     assert extract_version_from_env(env_dind, service_name="dind") == "29.9.1"
 
     # redis specific
@@ -120,43 +139,74 @@ def test_extract_version_from_image_tag():
     assert extract_version_from_image_tag("ghcr.io/org/repo:v1.2.3") == "v1.2.3"
     assert extract_version_from_image_tag("ghcr.io/org/repo:latest") is None
     assert extract_version_from_image_tag("ghcr.io/org/repo:stable") is None
-    assert extract_version_from_image_tag("sha256:e39da29cc49bd85cabdc2fcb223e8d565048cf47cf4af042022d15510badcacd") is None
+    assert (
+        extract_version_from_image_tag(
+            "sha256:e39da29cc49bd85cabdc2fcb223e8d565048cf47cf4af042022d15510badcacd"
+        )
+        is None
+    )
 
 
 def test_parse_vcs_url():
     assert parse_vcs_url("https://github.com/astral-sh/uv.git") == "https://github.com/astral-sh/uv"
-    assert parse_vcs_url("https://github.com/docker-library/docker.git#3e782bb:29/dind") == "https://github.com/docker-library/docker"
+    assert (
+        parse_vcs_url("https://github.com/docker-library/docker.git#3e782bb:29/dind")
+        == "https://github.com/docker-library/docker"
+    )
     assert parse_vcs_url("git@github.com:owner/repo.git") == "https://github.com/owner/repo"
-    assert parse_vcs_url("https://gitlab.com/group/project.git") == "https://gitlab.com/group/project"
+    assert (
+        parse_vcs_url("https://gitlab.com/group/project.git") == "https://gitlab.com/group/project"
+    )
     assert parse_vcs_url(None) is None
 
 
 def test_derive_changelog_url():
     # 1. From OCI source label with GitHub
     labels_gh = {"org.opencontainers.image.source": "https://github.com/owner/my-app.git"}
-    assert derive_changelog_url("my-app:latest", labels=labels_gh, version="1.2.3") == "https://github.com/owner/my-app/releases/tag/v1.2.3"
-    assert derive_changelog_url("my-app:latest", labels=labels_gh) == "https://github.com/owner/my-app/releases"
+    assert (
+        derive_changelog_url("my-app:latest", labels=labels_gh, version="1.2.3")
+        == "https://github.com/owner/my-app/releases/tag/v1.2.3"
+    )
+    assert (
+        derive_changelog_url("my-app:latest", labels=labels_gh)
+        == "https://github.com/owner/my-app/releases"
+    )
 
     # 2. From Komodo stack repo_link
-    assert derive_changelog_url("my-app:latest", stack_repo_link="https://github.com/fabian/stack-repo") == "https://github.com/fabian/stack-repo/releases"
+    assert (
+        derive_changelog_url(
+            "my-app:latest", stack_repo_link="https://github.com/fabian/stack-repo"
+        )
+        == "https://github.com/fabian/stack-repo/releases"
+    )
 
     # 3. From ghcr image reference
-    assert derive_changelog_url("ghcr.io/faserf/hermes-agent-hub:latest") == "https://github.com/faserf/hermes-agent-hub/releases"
+    assert (
+        derive_changelog_url("ghcr.io/faserf/hermes-agent-hub:latest")
+        == "https://github.com/faserf/hermes-agent-hub/releases"
+    )
 
     # 4. From official Docker Hub image reference
     assert derive_changelog_url("redis:alpine") == "https://hub.docker.com/_/redis/tags"
     assert derive_changelog_url("docker:29-dind") == "https://hub.docker.com/_/docker/tags"
 
     # 5. From Docker Hub community image reference
-    assert derive_changelog_url("tailscale/tailscale:latest") == "https://hub.docker.com/r/tailscale/tailscale/tags"
+    assert (
+        derive_changelog_url("tailscale/tailscale:latest")
+        == "https://hub.docker.com/r/tailscale/tailscale/tags"
+    )
 
     # 6. From direct documentation / changelog label
     labels_doc = {"org.opencontainers.image.documentation": "https://docs.myproject.org/changelog"}
-    assert derive_changelog_url("myproject:1.0", labels=labels_doc) == "https://docs.myproject.org/changelog"
+    assert (
+        derive_changelog_url("myproject:1.0", labels=labels_doc)
+        == "https://docs.myproject.org/changelog"
+    )
 
 
 def test_create_stack_device_info_configuration_url():
     from unittest.mock import MagicMock
+
     stack = MagicMock()
     stack.id = "s1"
     stack.name = "jarvis"
@@ -165,7 +215,9 @@ def test_create_stack_device_info_configuration_url():
     stack.branch = "main"
 
     # With base_url and deployed_hash
-    info = create_stack_device_info(stack, {"srv1": "dev_srv1"}, base_url="https://komodo.example.com")
+    info = create_stack_device_info(
+        stack, {"srv1": "dev_srv1"}, base_url="https://komodo.example.com"
+    )
     assert info["configuration_url"] == "https://komodo.example.com/stacks/s1"
     assert info["sw_version"] == "641203c1"
 
@@ -206,16 +258,23 @@ def test_create_komodo_main_device_info():
 def test_derive_changelog_url_advanced():
     # Suffixes like (update available)
     labels = {"org.opencontainers.image.source": "https://github.com/owner/my-app"}
-    assert derive_changelog_url("app", labels=labels, version="1.2.3 (update available)") == "https://github.com/owner/my-app/releases/tag/v1.2.3"
+    assert (
+        derive_changelog_url("app", labels=labels, version="1.2.3 (update available)")
+        == "https://github.com/owner/my-app/releases/tag/v1.2.3"
+    )
 
     # Git commit hash
-    assert derive_changelog_url("app", labels=labels, version="eacaaad") == "https://github.com/owner/my-app/commit/eacaaad"
+    assert (
+        derive_changelog_url("app", labels=labels, version="eacaaad")
+        == "https://github.com/owner/my-app/commit/eacaaad"
+    )
 
     # Generic or empty version
-    assert derive_changelog_url("app", labels=labels, version="update available") == "https://github.com/owner/my-app/releases"
-    assert derive_changelog_url("app", labels=labels, version="main") == "https://github.com/owner/my-app/releases"
-
-
-
-
-
+    assert (
+        derive_changelog_url("app", labels=labels, version="update available")
+        == "https://github.com/owner/my-app/releases"
+    )
+    assert (
+        derive_changelog_url("app", labels=labels, version="main")
+        == "https://github.com/owner/my-app/releases"
+    )

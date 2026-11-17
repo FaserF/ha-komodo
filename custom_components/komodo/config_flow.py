@@ -4,21 +4,20 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-
-from komodo_api.lib import KomodoClient, ApiKeyInitOptions
-from komodo_api.types import GetVersion
-from komodo_api.exceptions import KomodoException
+from aiohttp import ClientConnectionError
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
-from aiohttp import ClientConnectionError
+from komodo_api.exceptions import KomodoException
+from komodo_api.lib import ApiKeyInitOptions, KomodoClient
+from komodo_api.types import GetVersion
 
 from .const import (
-    DOMAIN,
-    CONF_HOST,
     CONF_API_KEY,
     CONF_API_SECRET,
+    CONF_HOST,
     CONTAINER_CATEGORIES,
+    DOMAIN,
     enabled_container_categories,
 )
 from .utils import fix_host
@@ -75,9 +74,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
         """Create the options flow."""
         return OptionsFlowHandler()
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -85,10 +82,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
                 info = await validate_input(self.hass, user_input)
                 data = dict(user_input)
                 data[CONF_HOST] = info["host"]
-                options = {
-                    category: data.pop(category, False)
-                    for category in CONTAINER_CATEGORIES
-                }
+                options = {category: data.pop(category, False) for category in CONTAINER_CATEGORIES}
                 return self.async_create_entry(
                     title=info["title"],
                     data=data,
@@ -158,9 +152,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle Komodo options."""
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(data=user_input)
@@ -168,8 +160,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
-                _container_entities_schema(
-                    enabled_container_categories(self.config_entry.options)
-                )
+                _container_entities_schema(enabled_container_categories(self.config_entry.options))
             ),
         )

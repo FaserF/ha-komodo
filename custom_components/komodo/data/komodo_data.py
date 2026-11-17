@@ -1,5 +1,5 @@
 # Arrange servers into a mapping where the key is the name property
-from typing import List, Mapping, Optional
+from typing import List, Optional
 
 from komodo_api.types import (
     ListActionsResponse,
@@ -46,7 +46,9 @@ class KomodoData:
         for server in servers:
             self.servers[server.id] = KomodoServer(server)
 
-    def get_server(self, server_id: str | None, server_name: str | None = None) -> KomodoServer | None:
+    def get_server(
+        self, server_id: str | None, server_name: str | None = None
+    ) -> KomodoServer | None:
         """Get server by ID, creating unknown server placeholder only if ID is non-empty."""
         if not server_id:
             return None

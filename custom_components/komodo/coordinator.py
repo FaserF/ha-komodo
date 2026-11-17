@@ -1,12 +1,14 @@
 """Coordinator to fetch the data once for all sensors."""
 
-from typing import Any
 import asyncio
 import logging
 import time
 from datetime import timedelta
 from functools import partial
+from typing import Any
 
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from komodo_api.exceptions import KomodoException
 from komodo_api.lib import KomodoClient
 from komodo_api.types import (
@@ -19,13 +21,9 @@ from komodo_api.types import (
     ListServers,
     ListStacks,
 )
-
 from releaseprobe import UnknownVersionError, check_for_update
 from releaseprobe.imageref import parse
 from releaseprobe.registry import fetch_labels
-
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .data.komodo_data import KomodoData
 from .data.service import KomodoService, KomodoUpdateInfo
@@ -146,12 +144,11 @@ class KomodoCoordinator(DataUpdateCoordinator[KomodoData]):
             for service_id, service in stack.services.items():
                 if not service.update_available:
                     continue
-                previous_service = previous_stack.services.get(service_id) if previous_stack else None
+                previous_service = (
+                    previous_stack.services.get(service_id) if previous_stack else None
+                )
                 previous_update_info = previous_service.update_info if previous_service else None
-                if (
-                    previous_update_info
-                    and (now - previous_update_info.info_updated_at) < 7200
-                ):
+                if previous_update_info and (now - previous_update_info.info_updated_at) < 7200:
                     service.update_info = previous_update_info
                 elif service.has_container:
                     update_info = KomodoUpdateInfo(now, current_version=service.installed_version)
@@ -224,7 +221,9 @@ class KomodoCoordinator(DataUpdateCoordinator[KomodoData]):
                 update_info.current_version = installed
 
         # If new_version is still missing or identical to current_version while an update is pending
-        if service.update_available and (not update_info.new_version or update_info.new_version == update_info.current_version):
+        if service.update_available and (
+            not update_info.new_version or update_info.new_version == update_info.current_version
+        ):
             if update_info.current_version and update_info.current_version != "0":
                 update_info.new_version = f"{update_info.current_version} (update available)"
             else:
@@ -245,9 +244,7 @@ class KomodoCoordinator(DataUpdateCoordinator[KomodoData]):
             )
             return {}
         except Exception as e:
-            _LOGGER.debug(
-                "Failed to inspect service %s in stack %s: %s", service_name, stack_id, e
-            )
+            _LOGGER.debug("Failed to inspect service %s in stack %s: %s", service_name, stack_id, e)
             return {}
 
         config = response.config if response else None
@@ -258,11 +255,6 @@ class KomodoCoordinator(DataUpdateCoordinator[KomodoData]):
             "image_id": getattr(response, "image", None) or "",
             "created": getattr(response, "created", None) or "",
         }
-
-    async def _fetch_container_labels(self, stack_id: str, service_name: str) -> dict[str, str]:
-        """Get the labels of a service's container (backwards compatibility)."""
-        info = await self._fetch_container_inspect(stack_id, service_name)
-        return info.get("labels", {})
 
     async def _probe_release_info(
         self,
@@ -302,7 +294,10 @@ class KomodoCoordinator(DataUpdateCoordinator[KomodoData]):
 
         # If latest_version is still unset or "update available" (e.g. tag updated in-place on Docker Hub),
         # probe registry labels directly for the configured tag
-        if update_info.new_version in ("update available", "0", None) or not update_info.release_url:
+        if (
+            update_info.new_version in ("update available", "0", None)
+            or not update_info.release_url
+        ):
             try:
                 ref = parse(image)
                 reg_labels = await self.hass.async_add_executor_job(

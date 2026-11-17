@@ -5,15 +5,15 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from .base import KomodoBase
+from .const import DOMAIN, enabled_container_categories
 from .sensors.alert import create_alert_sensors
 from .sensors.automation import create_automation_sensors
 from .sensors.build import create_build_sensors
 from .sensors.container import create_container_sensors
 from .sensors.server import create_server_sensors
 from .sensors.stack import create_stack_sensors
-
-from .const import DOMAIN, enabled_container_categories
-from .base import KomodoBase
 
 _LOGGER = logging.getLogger(__name__)
 

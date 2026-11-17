@@ -38,18 +38,28 @@ def _stack_service(stack_id, service, container=None):
 def test_add_stack_services_applies_container():
     data = KomodoData()
     data.add_stacks([_stack_item("s1", [("web", True), ("db", False)])])
-    data.add_stack_services([
-        _stack_service("s1", "web", ContainerListItem(
-            name="s1-web-1",
-            id="abc",
-            image="ghcr.io/org/web:latest",
-            state=ContainerStateStatusEnum.RUNNING,
-        )),
-        _stack_service("s1", "db"),
-        # Unknown stack / service are ignored
-        _stack_service("other", "web", ContainerListItem(name="x", state=ContainerStateStatusEnum.RUNNING)),
-        _stack_service("s1", "gone", ContainerListItem(name="y", state=ContainerStateStatusEnum.RUNNING)),
-    ])
+    data.add_stack_services(
+        [
+            _stack_service(
+                "s1",
+                "web",
+                ContainerListItem(
+                    name="s1-web-1",
+                    id="abc",
+                    image="ghcr.io/org/web:latest",
+                    state=ContainerStateStatusEnum.RUNNING,
+                ),
+            ),
+            _stack_service("s1", "db"),
+            # Unknown stack / service are ignored
+            _stack_service(
+                "other", "web", ContainerListItem(name="x", state=ContainerStateStatusEnum.RUNNING)
+            ),
+            _stack_service(
+                "s1", "gone", ContainerListItem(name="y", state=ContainerStateStatusEnum.RUNNING)
+            ),
+        ]
+    )
 
     web = data.stacks["s1"].services["web"]
     assert web.state == ContainerStateStatusEnum.RUNNING
@@ -188,6 +198,7 @@ def test_add_builds_and_sensor():
     assert attrs["built_hash"] == "abc12345"
     assert attrs["repo"] == "FaserF/Jarvis"
     from custom_components.komodo.const import DOMAIN
+
     assert sensor._attr_device_info["identifiers"] == {(DOMAIN, "entry_1")}
 
 
@@ -241,7 +252,6 @@ def test_add_procedures_and_actions():
     assert act_sensor._attr_entity_registry_enabled_default is False
     assert act_sensor.native_value == "OK"
     from custom_components.komodo.const import DOMAIN
+
     assert proc_sensor._attr_device_info["identifiers"] == {(DOMAIN, "entry_1")}
     assert act_sensor._attr_device_info["identifiers"] == {(DOMAIN, "entry_1")}
-
-

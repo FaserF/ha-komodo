@@ -1,9 +1,10 @@
+from typing import List
+
 from komodo_api.types import (
     ResourceListItem,
     StackListItem,
     StackState,
 )
-from typing import List
 
 from .service import KomodoService
 

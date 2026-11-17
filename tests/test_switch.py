@@ -17,26 +17,33 @@ def _coordinator(container_state):
     item.info.state = StackState.RUNNING
     data = KomodoData()
     data.add_stacks([item])
-    data.add_stack_services([
-        _stack_service("s1", "web", ContainerListItem(name="w", id="c1", state=container_state)),
-        # db has no container
-        _stack_service("s1", "db"),
-    ])
+    data.add_stack_services(
+        [
+            _stack_service(
+                "s1", "web", ContainerListItem(name="w", id="c1", state=container_state)
+            ),
+            # db has no container
+            _stack_service("s1", "db"),
+        ]
+    )
     coordinator = MagicMock()
     coordinator.data = data
     return coordinator
 
 
-@pytest.mark.parametrize("state,expected", [
-    (ContainerStateStatusEnum.RUNNING, True),
-    (ContainerStateStatusEnum.EXITED, False),
-    (ContainerStateStatusEnum.PAUSED, False),
-])
+@pytest.mark.parametrize(
+    "state,expected",
+    [
+        (ContainerStateStatusEnum.RUNNING, True),
+        (ContainerStateStatusEnum.EXITED, False),
+        (ContainerStateStatusEnum.PAUSED, False),
+    ],
+)
 def test_service_switch_state(state, expected):
     switches = create_switch_entities_for_services(MagicMock(), _coordinator(state), "e")
     by_name = {s.name: s for s in switches}
     assert by_name["web"].is_on is expected
-    assert by_name["db"].is_on is None
+    assert by_name["db"].is_on is False
 
 
 def test_stack_switch_created():

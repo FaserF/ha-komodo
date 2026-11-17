@@ -2,12 +2,13 @@
 
 import sys
 import types
-from unittest.mock import MagicMock
 from importlib.machinery import ModuleSpec
+from unittest.mock import MagicMock
 
 try:
     import homeassistant
 except ImportError:
+
     class BaseMockEntity:
         def __init__(self, *args, **kwargs):
             self.coordinator = args[0] if args else None
@@ -24,15 +25,21 @@ except ImportError:
 
     class AutoMockModule(types.ModuleType):
         def __getattr__(self, name):
-            if name.endswith("Entity") or name in ("Entity", "CoordinatorEntity", "DataUpdateCoordinator"):
+            if name.endswith("Entity") or name in (
+                "Entity",
+                "CoordinatorEntity",
+                "DataUpdateCoordinator",
+            ):
                 cls = type(name, (BaseMockEntity,), {})
                 setattr(self, name, cls)
                 return cls
             if name == "DeviceInfo":
+
                 class DeviceInfo(dict):
                     def __init__(self, **kwargs):
                         super().__init__(**kwargs)
                         self.__dict__.update(kwargs)
+
                 setattr(self, name, DeviceInfo)
                 return DeviceInfo
             val = MagicMock()
@@ -56,6 +63,7 @@ except ImportError:
     sys.meta_path.insert(0, HAMockFinder())
 
     import homeassistant.const
+
     homeassistant.const.MAJOR_VERSION = 2026
     homeassistant.const.MINOR_VERSION = 11
     homeassistant.core.callback = lambda fn: fn

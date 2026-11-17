@@ -155,13 +155,9 @@ def main() -> int:
     # 3. Check rule order
     listed_rules = [r for r in rules if r in CANONICAL_RULES]
     expected_order = [r for r in CANONICAL_RULES if r in rules]
-    for i, (l_rule, e_rule) in enumerate(
-        zip(listed_rules, expected_order, strict=False)
-    ):
+    for i, (l_rule, e_rule) in enumerate(zip(listed_rules, expected_order, strict=False)):
         if l_rule != e_rule:
-            errors.append(
-                f"Rule out of order: {l_rule} found at index {i}, expected {e_rule}"
-            )
+            errors.append(f"Rule out of order: {l_rule} found at index {i}, expected {e_rule}")
             break
 
     # 4. Check statuses and comments
@@ -172,9 +168,7 @@ def main() -> int:
             status = val.get("status")
             comment = val.get("comment")
             if not comment or not str(comment).strip():
-                errors.append(
-                    f"Rule '{name}' is exempt but missing a valid comment justification"
-                )
+                errors.append(f"Rule '{name}' is exempt but missing a valid comment justification")
         elif isinstance(val, str):
             status = val
         else:
@@ -182,9 +176,7 @@ def main() -> int:
             continue
 
         if status == "todo":
-            errors.append(
-                f"Rule '{name}' is marked todo: must be done or exempt with comment"
-            )
+            errors.append(f"Rule '{name}' is marked todo: must be done or exempt with comment")
         elif status == "done":
             done_count += 1
         elif status == "exempt":
@@ -195,13 +187,9 @@ def main() -> int:
     # 5. Programmatic checks
     if rules.get("config-flow") == "done":
         if not manifest.get("config_flow"):
-            errors.append(
-                "config-flow is marked done but manifest.json has config_flow=false"
-            )
+            errors.append("config-flow is marked done but manifest.json has config_flow=false")
         if not (integration_dir / "config_flow.py").is_file():
-            errors.append(
-                "config-flow is marked done but config_flow.py does not exist"
-            )
+            errors.append("config-flow is marked done but config_flow.py does not exist")
 
     if rules.get("unique-config-entry") == "done":
         cf_file = integration_dir / "config_flow.py"

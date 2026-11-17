@@ -154,9 +154,7 @@ async def wait_for_completion(client: KomodoClient, update: Update, title: str):
     if update.success:
         _LOGGER.info("%s successful", title)
     else:
-        logs = "\n".join(
-            f"[{log.stage}] {log.stderr} {log.stdout}" for log in update.logs
-        )
+        logs = "\n".join(f"[{log.stage}] {log.stderr} {log.stdout}" for log in update.logs)
         _LOGGER.error("%s failed. Logs:\n%s", title, logs)
     return update
 
@@ -212,6 +210,7 @@ def clean_image_name(img: str | None) -> str:
     """Normalize docker image name by resolving compose variable interpolations."""
     if not img:
         return ""
+
     # Resolve compose variable patterns like ${VAR:-default} or ${VAR}
     def repl(match: re.Match) -> str:
         default_val = match.group(2)
@@ -418,5 +417,3 @@ def derive_changelog_url(
             return f"https://hub.docker.com/_/{cleaned_img}/tags"
 
     return None
-
-

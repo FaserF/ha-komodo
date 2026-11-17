@@ -32,14 +32,10 @@ async def async_setup_entry(
     komodo: KomodoBase = hass.data[DOMAIN][entry.entry_id]
 
     # Procedure buttons (disabled by default)
-    procedure_entities = create_procedure_buttons(
-        komodo.coordinator, komodo.api, entry.entry_id
-    )
+    procedure_entities = create_procedure_buttons(komodo.coordinator, komodo.api, entry.entry_id)
 
     # Action buttons (disabled by default)
-    action_entities = create_action_buttons(
-        komodo.coordinator, komodo.api, entry.entry_id
-    )
+    action_entities = create_action_buttons(komodo.coordinator, komodo.api, entry.entry_id)
 
     # Stack deploy buttons
     deploy_entities = create_deploy_buttons_for_stacks(
@@ -47,13 +43,9 @@ async def async_setup_entry(
     )
 
     # Build run buttons (disabled by default)
-    build_entities = create_build_buttons(
-        komodo.coordinator, komodo.api, entry.entry_id
-    )
+    build_entities = create_build_buttons(komodo.coordinator, komodo.api, entry.entry_id)
 
-    async_add_entities(
-        procedure_entities + action_entities + deploy_entities + build_entities
-    )
+    async_add_entities(procedure_entities + action_entities + deploy_entities + build_entities)
 
 
 class KomodoProcedureButton(CoordinatorEntity[KomodoCoordinator], ButtonEntity):
@@ -125,12 +117,8 @@ class KomodoActionButton(CoordinatorEntity[KomodoCoordinator], ButtonEntity):
         """Trigger the action."""
         _LOGGER.info("Starting action %s", self._action_name)
         try:
-            update = await self._api.execute.runAction(
-                RunAction(action=self._action_id)
-            )
-            update = await wait_for_completion(
-                self._api, update, f"Action {self._action_name}"
-            )
+            update = await self._api.execute.runAction(RunAction(action=self._action_id))
+            update = await wait_for_completion(self._api, update, f"Action {self._action_name}")
             _LOGGER.info("Completed action %s", self._action_name)
             await self.coordinator.async_request_refresh()
         except Exception as e:
@@ -165,9 +153,7 @@ class KomodoStackDeployButton(CoordinatorEntity[KomodoCoordinator], ButtonEntity
         """Deploy the stack."""
         _LOGGER.info("Deploying stack %s", self._stack_name)
         try:
-            update = await self._api.execute.deployStack(
-                DeployStack(stack=self._stack_id)
-            )
+            update = await self._api.execute.deployStack(DeployStack(stack=self._stack_id))
             update = await wait_for_completion(
                 self._api,
                 update,
@@ -234,9 +220,7 @@ class KomodoBuildRunButton(CoordinatorEntity[KomodoCoordinator], ButtonEntity):
         """Trigger the build."""
         _LOGGER.info("Starting build %s", self._build_name)
         try:
-            update = await self._api.execute.runBuild(
-                RunBuild(build=self._build_id)
-            )
+            update = await self._api.execute.runBuild(RunBuild(build=self._build_id))
             update = await wait_for_completion(
                 self._api,
                 update,

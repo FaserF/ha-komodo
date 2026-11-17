@@ -1,9 +1,10 @@
 from typing import Optional
+
 from komodo_api.types import (
+    MinimalSystemStats,
+    ResourceListItem,
     ServerListItem,
     ServerState,
-    ResourceListItem,
-    MinimalSystemStats,
 )
 
 

@@ -1,23 +1,23 @@
 """Update entities for Komodo."""
 
 from __future__ import annotations
+
 import logging
 from typing import Any
+
 from homeassistant.components.update import UpdateEntity, UpdateEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-
 from komodo_api.types import DeployStack, Update
 
-from .utils import wait_for_completion, create_stack_device_info
-
-from .const import DOMAIN
 from .base import KomodoBase
+from .const import DOMAIN
 from .coordinator import KomodoCoordinator
 from .data.service import KomodoService
+from .utils import create_stack_device_info, wait_for_completion
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,9 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 class KomodoUpdateEntity(CoordinatorEntity[KomodoCoordinator], UpdateEntity):
     """Update entity for a service in a stack."""
 
-    _attr_supported_features = (
-        UpdateEntityFeature.INSTALL | UpdateEntityFeature.RELEASE_NOTES
-    )
+    _attr_supported_features = UpdateEntityFeature.INSTALL | UpdateEntityFeature.RELEASE_NOTES
     _attr_title: str | None = None
 
     def __init__(
@@ -70,9 +68,12 @@ class KomodoUpdateEntity(CoordinatorEntity[KomodoCoordinator], UpdateEntity):
         """Update entity attributes from coordinator data."""
         service = self._find_service()
         if service and service.update_info:
-            self._attr_installed_version = service.update_info.current_version or service.installed_version
+            current = service.update_info.current_version
+            if not current or current == "0":
+                current = service.installed_version
+            self._attr_installed_version = current
             self._attr_latest_version = service.update_info.new_version
-            self._attr_title = f"{self._service_name}: "
+            self._attr_title = f"{self._service_name}"
             self._attr_release_summary = service.update_info.release_summary
             self._attr_release_url = service.update_info.release_url
         elif service:
@@ -83,8 +84,8 @@ class KomodoUpdateEntity(CoordinatorEntity[KomodoCoordinator], UpdateEntity):
             self._attr_release_summary = None
             self._attr_release_url = None
         else:
-            self._attr_installed_version = "0"
-            self._attr_latest_version = "0"
+            self._attr_installed_version = None
+            self._attr_latest_version = None
             self._attr_title = None
             self._attr_release_summary = None
             self._attr_release_url = None
@@ -111,9 +112,7 @@ class KomodoUpdateEntity(CoordinatorEntity[KomodoCoordinator], UpdateEntity):
 
         return None
 
-    async def async_install(
-        self, version: str | None, backup: bool, **kwargs: Any
-    ) -> None:
+    async def async_install(self, version: str | None, backup: bool, **kwargs: Any) -> None:
         """Install an update."""
         update: Update = await self.coordinator.my_api.execute.deployStack(
             DeployStack(stack=self._stack_id, services=[self._service_name])

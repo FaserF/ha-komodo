@@ -1,6 +1,7 @@
 """Switch platform for Komodo services."""
 
 from __future__ import annotations
+
 import logging
 from typing import Any
 
@@ -9,25 +10,24 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-
+from komodo_api.lib import KomodoClient
 from komodo_api.types import (
     ContainerStateStatusEnum,
+    DeployStack,
+    InspectStackContainer,
+    InspectStackContainerResponse,
+    StackState,
     StartContainer,
     StopContainer,
-    InspectStackContainerResponse,
-    InspectStackContainer,
-    DeployStack,
     StopStack,
-    StackState,
 )
 
-from .utils import wait_for_completion, create_stack_device_info
-from .const import DOMAIN
 from .base import KomodoBase
+from .const import DOMAIN
 from .coordinator import KomodoCoordinator
 from .data.service import KomodoService
 from .data.stack import KomodoStack
-from komodo_api.lib import KomodoClient
+from .utils import create_stack_device_info, wait_for_completion
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -75,14 +75,16 @@ class KomodoServiceSwitch(CoordinatorEntity[KomodoCoordinator], SwitchEntity):
             # Service is "on" when state is RUNNING
             self._attr_is_on = service.state == ContainerStateStatusEnum.RUNNING
         else:
-            self._attr_is_on = None
-    
+            self._attr_is_on = False
+
     async def query_container(self) -> str:
         """Query the container id."""
         service = self._find_service()
         if service and service.container_id:
             return service.container_id
-        response: InspectStackContainerResponse = await self._api.read.inspectStackContainer(InspectStackContainer(stack = self._stack_id, service = self._service_name))
+        response: InspectStackContainerResponse = await self._api.read.inspectStackContainer(
+            InspectStackContainer(stack=self._stack_id, service=self._service_name)
+        )
         return response.id
 
     async def async_turn_on(self, **kwargs: Any) -> None:
@@ -90,7 +92,9 @@ class KomodoServiceSwitch(CoordinatorEntity[KomodoCoordinator], SwitchEntity):
         _LOGGER.info("Starting service %s in stack %s", self._service_name, self._stack_name)
         try:
             container = await self.query_container()
-            update = await self._api.execute.startContainer(StartContainer(server=self._server_id, container = container))
+            update = await self._api.execute.startContainer(
+                StartContainer(server=self._server_id, container=container)
+            )
             update = await wait_for_completion(
                 self.coordinator.my_api,
                 update,
@@ -106,7 +110,9 @@ class KomodoServiceSwitch(CoordinatorEntity[KomodoCoordinator], SwitchEntity):
         _LOGGER.info("Stopping service %s in stack %s", self._service_name, self._stack_name)
         try:
             container = await self.query_container()
-            update = await self._api.execute.stopContainer(StopContainer(server=self._server_id, container= container))
+            update = await self._api.execute.stopContainer(
+                StopContainer(server=self._server_id, container=container)
+            )
             update = await wait_for_completion(
                 self.coordinator.my_api,
                 update,
@@ -160,15 +166,13 @@ class KomodoStackSwitch(CoordinatorEntity[KomodoCoordinator], SwitchEntity):
         if stack and stack.state is not None:
             self._attr_is_on = stack.state == StackState.RUNNING
         else:
-            self._attr_is_on = None
+            self._attr_is_on = False
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Deploy the stack."""
         _LOGGER.info("Deploying stack %s", self._stack_name)
         try:
-            update = await self._api.execute.deployStack(
-                DeployStack(stack=self._stack_id)
-            )
+            update = await self._api.execute.deployStack(DeployStack(stack=self._stack_id))
             update = await wait_for_completion(
                 self._api,
                 update,
@@ -183,9 +187,7 @@ class KomodoStackSwitch(CoordinatorEntity[KomodoCoordinator], SwitchEntity):
         """Stop the stack."""
         _LOGGER.info("Stopping stack %s", self._stack_name)
         try:
-            update = await self._api.execute.stopStack(
-                StopStack(stack=self._stack_id)
-            )
+            update = await self._api.execute.stopStack(StopStack(stack=self._stack_id))
             update = await wait_for_completion(
                 self._api,
                 update,
@@ -245,7 +247,7 @@ def create_switch_entities_for_services(
         for service in stack.services.values():
             entity = KomodoServiceSwitch(
                 coordinator=coordinator,
-                api = api,
+                api=api,
                 item_id=f"{entry_id}_{stack.id}_{service.name}",
                 stack_id=stack.id,
                 stack_name=stack.name,
@@ -264,6 +266,10 @@ async def async_setup_entry(
     """Setup switch platform."""
     komodo: KomodoBase = hass.data[DOMAIN][entry.entry_id]
 
-    stack_switches = create_switch_entities_for_stacks(komodo.api, komodo.coordinator, entry.entry_id)
-    service_switches = create_switch_entities_for_services(komodo.api, komodo.coordinator, entry.entry_id)
+    stack_switches = create_switch_entities_for_stacks(
+        komodo.api, komodo.coordinator, entry.entry_id
+    )
+    service_switches = create_switch_entities_for_services(
+        komodo.api, komodo.coordinator, entry.entry_id
+    )
     async_add_entities(stack_switches + service_switches)

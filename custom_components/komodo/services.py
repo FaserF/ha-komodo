@@ -1,21 +1,21 @@
 """Services for the Komodo integration."""
 
 import logging
+
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
-
 from komodo_api.types import (
-    PruneSystem,
-    PruneImages,
-    PruneContainers,
-    PruneVolumes,
-    PruneBuildx,
-    RestartAllContainers,
     GlobalAutoUpdate,
+    PruneBuildx,
+    PruneContainers,
+    PruneImages,
+    PruneSystem,
+    PruneVolumes,
+    RestartAllContainers,
 )
 
-from .const import DOMAIN
 from .base import KomodoBase
+from .const import DOMAIN
 from .utils import wait_for_completion
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,10 +29,7 @@ def _get_komodo_instances(hass: HomeAssistant) -> list[KomodoBase]:
     """Get all loaded KomodoBase instances."""
     if DOMAIN not in hass.data:
         return []
-    return [
-        inst for inst in hass.data[DOMAIN].values()
-        if isinstance(inst, KomodoBase)
-    ]
+    return [inst for inst in hass.data[DOMAIN].values() if isinstance(inst, KomodoBase)]
 
 
 def _resolve_server_id(komodo: KomodoBase, target: str) -> str:
@@ -64,7 +61,8 @@ async def async_setup_services(hass: HomeAssistant) -> None:
                 servers_to_prune.append(_resolve_server_id(komodo, str(target_server)))
             elif komodo.coordinator and komodo.coordinator.data:
                 servers_to_prune = [
-                    s.id for s in komodo.coordinator.data.servers.values()
+                    s.id
+                    for s in komodo.coordinator.data.servers.values()
                     if s.id and not s.is_unknown
                 ]
 
@@ -73,7 +71,9 @@ async def async_setup_services(hass: HomeAssistant) -> None:
                 if prune_type == "images":
                     update = await komodo.api.execute.pruneImages(PruneImages(server=srv_id))
                 elif prune_type == "containers":
-                    update = await komodo.api.execute.pruneContainers(PruneContainers(server=srv_id))
+                    update = await komodo.api.execute.pruneContainers(
+                        PruneContainers(server=srv_id)
+                    )
                 elif prune_type == "volumes":
                     update = await komodo.api.execute.pruneVolumes(PruneVolumes(server=srv_id))
                 elif prune_type == "buildx":
@@ -126,7 +126,9 @@ async def async_setup_services(hass: HomeAssistant) -> None:
         hass.services.async_register(DOMAIN, SERVICE_PRUNE_DOCKER, handle_prune_docker)
 
     if not hass.services.has_service(DOMAIN, SERVICE_RESTART_ALL_CONTAINERS):
-        hass.services.async_register(DOMAIN, SERVICE_RESTART_ALL_CONTAINERS, handle_restart_all_containers)
+        hass.services.async_register(
+            DOMAIN, SERVICE_RESTART_ALL_CONTAINERS, handle_restart_all_containers
+        )
 
     if not hass.services.has_service(DOMAIN, SERVICE_GLOBAL_AUTO_UPDATE):
         hass.services.async_register(DOMAIN, SERVICE_GLOBAL_AUTO_UPDATE, handle_global_auto_update)

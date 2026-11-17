@@ -4,12 +4,6 @@ import pytest
 from homeassistant.const import EntityCategory
 from komodo_api.types import ContainerListItem, ContainerStateStatusEnum, ContainerStats
 
-from custom_components.komodo.data.komodo_data import KomodoData
-from custom_components.komodo.sensors.container import (
-    CONTAINER_SENSORS,
-    container_sensor_category,
-    create_container_sensors,
-)
 from custom_components.komodo.const import (
     CONF_CONTAINER_CPU,
     CONF_CONTAINER_DISK,
@@ -19,6 +13,12 @@ from custom_components.komodo.const import (
     CONTAINER_CATEGORIES,
     enabled_container_categories,
 )
+from custom_components.komodo.data.komodo_data import KomodoData
+from custom_components.komodo.sensors.container import (
+    CONTAINER_SENSORS,
+    container_sensor_category,
+    create_container_sensors,
+)
 
 from .test_komodo_data import _stack_item, _stack_service
 
@@ -26,24 +26,30 @@ from .test_komodo_data import _stack_item, _stack_service
 def _coordinator():
     data = KomodoData()
     data.add_stacks([_stack_item("s1", [("web", False), ("db", False)])])
-    data.add_stack_services([
-        _stack_service("s1", "web", ContainerListItem(
-            name="w",
-            id="c1",
-            state=ContainerStateStatusEnum.RUNNING,
-            stats=ContainerStats(
-                name="w",
-                cpu_perc="1.00%",
-                mem_perc="2.00%",
-                mem_usage="12MiB / 1GiB",
-                net_io="1.5kB / 2MB",
-                block_io="0B / 8kB",
-                pids="3",
+    data.add_stack_services(
+        [
+            _stack_service(
+                "s1",
+                "web",
+                ContainerListItem(
+                    name="w",
+                    id="c1",
+                    state=ContainerStateStatusEnum.RUNNING,
+                    stats=ContainerStats(
+                        name="w",
+                        cpu_perc="1.00%",
+                        mem_perc="2.00%",
+                        mem_usage="12MiB / 1GiB",
+                        net_io="1.5kB / 2MB",
+                        block_io="0B / 8kB",
+                        pids="3",
+                    ),
+                ),
             ),
-        )),
-        # db has no container
-        _stack_service("s1", "db"),
-    ])
+            # db has no container
+            _stack_service("s1", "db"),
+        ]
+    )
     coordinator = MagicMock()
     coordinator.data = data
     return coordinator
@@ -67,7 +73,11 @@ def test_container_sensor_values():
 
 @pytest.mark.parametrize(
     "enabled",
-    [frozenset(), frozenset(CONTAINER_CATEGORIES), frozenset({CONF_CONTAINER_CPU, CONF_CONTAINER_MEMORY})],
+    [
+        frozenset(),
+        frozenset(CONTAINER_CATEGORIES),
+        frozenset({CONF_CONTAINER_CPU, CONF_CONTAINER_MEMORY}),
+    ],
 )
 def test_container_sensor_attributes(enabled):
     sensors = create_container_sensors(_coordinator(), "e", enabled)
@@ -94,7 +104,11 @@ def test_container_sensor_category():
 
 def test_enabled_container_categories():
     assert enabled_container_categories({}) == frozenset()
-    assert enabled_container_categories({CONF_CONTAINER_CPU: True, CONF_CONTAINER_DISK: False}) == {CONF_CONTAINER_CPU}
+    assert enabled_container_categories({CONF_CONTAINER_CPU: True, CONF_CONTAINER_DISK: False}) == {
+        CONF_CONTAINER_CPU
+    }
     # Legacy option enables all categories
-    assert enabled_container_categories({CONF_CONTAINER_ENTITIES: True}) == frozenset(CONTAINER_CATEGORIES)
+    assert enabled_container_categories({CONF_CONTAINER_ENTITIES: True}) == frozenset(
+        CONTAINER_CATEGORIES
+    )
     assert enabled_container_categories({CONF_CONTAINER_ENTITIES: False}) == frozenset()

@@ -1,9 +1,10 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
+from komodo_api.lib import ApiKeyInitOptions
 
 from custom_components.komodo.base import KomodoBase
-from komodo_api.lib import ApiKeyInitOptions
 
 
 @pytest.fixture
@@ -12,6 +13,7 @@ def mock_base():
     hass.loop.is_running.return_value = True
 
     tasks = []
+
     def create_task(coro, name=None):
         t = asyncio.create_task(coro)
         tasks.append(t)
@@ -27,7 +29,9 @@ def mock_base():
         mock_client.subscribe_to_update_websocket = AsyncMock()
         mock_client_cls.return_value = mock_client
 
-        base = KomodoBase(hass, "http://localhost:9120", ApiKeyInitOptions("k", "s"), entry_id="test_entry")
+        base = KomodoBase(
+            hass, "http://localhost:9120", ApiKeyInitOptions("k", "s"), entry_id="test_entry"
+        )
         base.coordinator.async_request_refresh = AsyncMock()
         yield base
 

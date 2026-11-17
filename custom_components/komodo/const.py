@@ -1,10 +1,16 @@
 """Constants for the Komodo integration."""
 
-from homeassistant.const import CONF_HOST, CONF_API_KEY, CONF_CLIENT_SECRET
+from homeassistant.const import (
+    CONF_API_KEY as CONF_API_KEY,
+)
+from homeassistant.const import (
+    CONF_CLIENT_SECRET,
+)
+from homeassistant.const import (
+    CONF_HOST as CONF_HOST,
+)
 
 DOMAIN = "komodo"
-CONF_HOST = CONF_HOST
-CONF_API_KEY = CONF_API_KEY
 CONF_API_SECRET = CONF_CLIENT_SECRET
 # Legacy option, replaced by the per-category options below
 CONF_CONTAINER_ENTITIES = "container_entities"

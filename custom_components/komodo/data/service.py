@@ -1,23 +1,23 @@
 from typing import Any
 
 from komodo_api.types import (
-    StackServiceWithUpdate,
     ContainerListItem,
     ContainerStateStatusEnum,
     ContainerStats,
+    StackServiceWithUpdate,
 )
 from releaseprobe import UpdateCheck
 from releaseprobe.changelog import ReleaseNote
 
 from ..utils import (
+    clean_image_name,
+    derive_changelog_url,
+    extract_version_from_env,
+    extract_version_from_image_tag,
+    extract_version_from_labels,
     parse_docker_percent,
     parse_docker_size,
     split_docker_pair,
-    clean_image_name,
-    extract_version_from_labels,
-    extract_version_from_env,
-    extract_version_from_image_tag,
-    derive_changelog_url,
 )
 
 
@@ -42,7 +42,9 @@ class KomodoUpdateInfo:
     release_url: str | None
     release_notes: str | None
 
-    def __init__(self, updated_at: float, current_version: str = "0", new_version: str = "update available"):
+    def __init__(
+        self, updated_at: float, current_version: str = "0", new_version: str = "update available"
+    ):
         self.current_version = current_version
         self.new_version = new_version
         self.info_updated_at = updated_at
@@ -63,9 +65,15 @@ class KomodoUpdateInfo:
 
     def apply_release_info(self, check: UpdateCheck) -> None:
         """Apply the result of a releaseprobe update check."""
-        if check.current_version and (self.current_version in ("0", "unknown") or not self.current_version):
+        if check.current_version and (
+            self.current_version in ("0", "unknown") or not self.current_version
+        ):
             self.current_version = check.current_version
-        elif check.current_info and check.current_info.version and (self.current_version in ("0", "unknown") or not self.current_version):
+        elif (
+            check.current_info
+            and check.current_info.version
+            and (self.current_version in ("0", "unknown") or not self.current_version)
+        ):
             self.current_version = check.current_info.version
 
         if check.latest_version:
@@ -151,7 +159,11 @@ class KomodoService:
         self.stats = container.stats
         if container.image:
             # Preserve repo name if container only reported an image hash
-            if not container.image.startswith("sha256:") or not self.image or self.image.startswith("sha256:"):
+            if (
+                not container.image.startswith("sha256:")
+                or not self.image
+                or self.image.startswith("sha256:")
+            ):
                 self.image = container.image
 
     def apply_stack_service(self, item: Any) -> None:
@@ -180,7 +192,11 @@ class KomodoService:
     @property
     def installed_version(self) -> str:
         """Return the resolved installed version of the container."""
-        if self.update_info and self.update_info.current_version and self.update_info.current_version != "0":
+        if (
+            self.update_info
+            and self.update_info.current_version
+            and self.update_info.current_version != "0"
+        ):
             return self.update_info.current_version
 
         if ver := extract_version_from_labels(self.labels):
@@ -200,7 +216,6 @@ class KomodoService:
             return self.container_id[:8]
 
         return "0"
-
 
     def _stats_pair(self, field: str) -> tuple[float | None, float | None]:
         """Parse a 'a / b' docker stats field into two byte values."""

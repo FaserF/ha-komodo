@@ -2,9 +2,10 @@ import asyncio
 import logging
 from typing import Any
 
-from komodo_api.lib import KomodoClient, ApiKeyInitOptions, CancelToken
-from komodo_api.types import GetVersion
 from homeassistant.core import HomeAssistant
+from komodo_api.lib import ApiKeyInitOptions, CancelToken, KomodoClient
+from komodo_api.types import GetVersion
+
 from .coordinator import KomodoCoordinator
 from .utils import fix_host
 
@@ -47,9 +48,7 @@ class KomodoBase:
             _LOGGER.debug("Real-time update received from Komodo WebSocket: %s", update_item)
             if hasattr(self.hass, "loop") and self.hass.loop.is_running():
                 self.hass.loop.call_soon_threadsafe(
-                    lambda: self.hass.async_create_task(
-                        self.coordinator.async_request_refresh()
-                    )
+                    lambda: self.hass.async_create_task(self.coordinator.async_request_refresh())
                 )
 
         async def _run_ws() -> None:
@@ -68,9 +67,7 @@ class KomodoBase:
 
         task_name = f"komodo_ws_{self.entry_id}" if self.entry_id else "komodo_ws"
         if hasattr(self.hass, "async_create_background_task"):
-            self.ws_task = self.hass.async_create_background_task(
-                _run_ws(), name=task_name
-            )
+            self.ws_task = self.hass.async_create_background_task(_run_ws(), name=task_name)
         else:
             self.ws_task = self.hass.async_create_task(_run_ws())
 
@@ -83,8 +80,10 @@ class KomodoBase:
                 self.ws_task.cancel()
                 try:
                     await self.ws_task
-                except (asyncio.CancelledError, Exception):
+                except asyncio.CancelledError:
                     pass
+                except Exception as err:
+                    _LOGGER.debug("Error stopping Komodo WebSocket task: %s", err)
             self.ws_task = None
 
     async def close(self) -> None:
