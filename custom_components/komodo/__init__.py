@@ -20,6 +20,7 @@ from .const import (
 )
 from .sensors.container import container_sensor_category
 from .services import async_setup_services, async_unload_services
+from .utils import _SUPPORTS_VIA_DEVICE_ID
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.UPDATE, Platform.BUTTON, Platform.SWITCH]
@@ -53,7 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # devices of all platforms can reference them via their device registry id.
     device_reg = dr.async_get(hass)
     base_url = komodo.coordinator.host_url
-    device_reg.async_get_or_create(
+    main_device = device_reg.async_get_or_create(
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, entry.entry_id)},
         name="Komodo",
@@ -71,7 +72,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             manufacturer="Komodo",
             sw_version=server.periphery_version,
             configuration_url=f"{base_url.rstrip('/')}/servers/{server.id}" if base_url else None,
-            via_device=(DOMAIN, entry.entry_id),
+            **(
+                {"via_device_id": main_device.id}
+                if _SUPPORTS_VIA_DEVICE_ID
+                else {"via_device": (DOMAIN, entry.entry_id)}
+            ),
         ).id
         for server in komodo.coordinator.data.servers.values()
         if server.id and not server.is_unknown

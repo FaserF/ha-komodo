@@ -4,6 +4,7 @@ import re
 from typing import TYPE_CHECKING
 
 from homeassistant.const import MAJOR_VERSION, MINOR_VERSION
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from komodo_api.lib import KomodoClient
 from komodo_api.types import GetUpdate, Update, UpdateStatus
@@ -146,7 +147,7 @@ def fix_host(host: str) -> str:
         return f"https://{host}"
 
 
-async def wait_for_completion(client: KomodoClient, update: Update, title: str):
+async def wait_for_completion(client: KomodoClient, update: Update, title: str) -> Update:
     while update.status != UpdateStatus.COMPLETE:
         await asyncio.sleep(1)
         update = await client.read.getUpdate(GetUpdate(id=update.id.oid))
@@ -154,8 +155,9 @@ async def wait_for_completion(client: KomodoClient, update: Update, title: str):
     if update.success:
         _LOGGER.info("%s successful", title)
     else:
-        logs = "\n".join(f"[{log.stage}] {log.stderr} {log.stdout}" for log in update.logs)
+        logs = "\n".join(f"[{log.stage}] {log.stderr} {log.stdout}".strip() for log in update.logs)
         _LOGGER.error("%s failed. Logs:\n%s", title, logs)
+        raise HomeAssistantError(f"{title} failed:\n{logs}")
     return update
 
 

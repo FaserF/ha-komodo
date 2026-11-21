@@ -278,3 +278,43 @@ def test_derive_changelog_url_advanced():
         derive_changelog_url("app", labels=labels, version="main")
         == "https://github.com/owner/my-app/releases"
     )
+
+
+@pytest.mark.asyncio
+async def test_wait_for_completion_success():
+    from unittest.mock import MagicMock
+
+    from komodo_api.types import UpdateStatus
+
+    from custom_components.komodo.utils import wait_for_completion
+
+    client = MagicMock()
+    update = MagicMock()
+    update.status = UpdateStatus.COMPLETE
+    update.success = True
+
+    result = await wait_for_completion(client, update, "Test operation")
+    assert result == update
+
+
+@pytest.mark.asyncio
+async def test_wait_for_completion_failure():
+    from unittest.mock import MagicMock
+
+    from homeassistant.exceptions import HomeAssistantError
+    from komodo_api.types import UpdateStatus
+
+    from custom_components.komodo.utils import wait_for_completion
+
+    client = MagicMock()
+    update = MagicMock()
+    update.status = UpdateStatus.COMPLETE
+    update.success = False
+    log_mock = MagicMock()
+    log_mock.stage = "Build"
+    log_mock.stderr = "error details"
+    log_mock.stdout = ""
+    update.logs = [log_mock]
+
+    with pytest.raises(HomeAssistantError, match="Test operation failed"):
+        await wait_for_completion(client, update, "Test operation")

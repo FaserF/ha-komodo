@@ -25,6 +25,14 @@ except ImportError:
 
     class AutoMockModule(types.ModuleType):
         def __getattr__(self, name):
+            if (
+                name.endswith("Error")
+                or name.endswith("Exception")
+                or name == "ConfigEntryNotReady"
+            ):
+                cls = type(name, (Exception,), {})
+                setattr(self, name, cls)
+                return cls
             if name.endswith("Entity") or name in (
                 "Entity",
                 "CoordinatorEntity",

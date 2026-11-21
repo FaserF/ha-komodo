@@ -12,6 +12,19 @@ from .utils import fix_host
 _LOGGER = logging.getLogger(__name__)
 
 
+class KomodoCancelToken(CancelToken):
+    """CancelToken ensuring cancelled attribute exists in Python 3.14/Pydantic."""
+
+    cancelled: bool = False
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.cancelled = False
+
+    def cancel(self) -> None:
+        self.cancelled = True
+
+
 class KomodoBase:
     """Base class for Komodo integration, holding shared API client and coordinator."""
 
@@ -36,7 +49,7 @@ class KomodoBase:
         self.coordinator = KomodoCoordinator(hass, self.api)
         self.coordinator.host_url = fix_host(host)
         self.container_categories = frozenset()
-        self.ws_cancel_token = CancelToken()
+        self.ws_cancel_token = KomodoCancelToken()
         self.ws_task = None
 
     def start_websocket(self) -> None:

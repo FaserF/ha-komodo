@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -27,6 +28,8 @@ class KomodoUpdateEntity(CoordinatorEntity[KomodoCoordinator], UpdateEntity):
 
     _attr_supported_features = UpdateEntityFeature.INSTALL | UpdateEntityFeature.RELEASE_NOTES
     _attr_title: str | None = None
+    _attr_installed_version: str | None = None
+    _attr_latest_version: str | None = None
 
     def __init__(
         self,
@@ -114,15 +117,31 @@ class KomodoUpdateEntity(CoordinatorEntity[KomodoCoordinator], UpdateEntity):
 
     async def async_install(self, version: str | None, backup: bool, **kwargs: Any) -> None:
         """Install an update."""
-        update: Update = await self.coordinator.my_api.execute.deployStack(
-            DeployStack(stack=self._stack_id, services=[self._service_name])
-        )
-        update = await wait_for_completion(
-            self.coordinator.my_api,
-            update,
-            f"Update of {self._stack_name}/{self._service_name}",
-        )
-        await self.coordinator.async_refresh()
+        _LOGGER.info("Starting update for %s/%s", self._stack_name, self._service_name)
+        self._attr_in_progress = True
+        self.async_write_ha_state()
+
+        try:
+            # Add a timeout and robust execution block to prevent hanging UI
+            update: Update = await asyncio.wait_for(
+                self.coordinator.my_api.execute.deployStack(
+                    DeployStack(stack=self._stack_id, services=[self._service_name])
+                ),
+                timeout=30.0,
+            )
+            await wait_for_completion(
+                self.coordinator.my_api,
+                update,
+                f"Update of {self._stack_name}/{self._service_name}",
+            )
+            _LOGGER.info("Update complete for %s/%s", self._stack_name, self._service_name)
+        except Exception as err:
+            _LOGGER.error("Update failed for %s/%s: %s", self._stack_name, self._service_name, err)
+            raise
+        finally:
+            self._attr_in_progress = False
+            await self.coordinator.async_refresh()
+            self.async_write_ha_state()
 
     @callback
     def _handle_coordinator_update(self) -> None:
