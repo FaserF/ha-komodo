@@ -7,7 +7,11 @@ from unittest.mock import MagicMock
 
 try:
     import homeassistant
-except ImportError:
+    from homeassistant.helpers import frame
+
+    if hasattr(frame, "_hass"):
+        frame._hass.hass = MagicMock()
+except Exception:
 
     class BaseMockEntity:
         def __init__(self, *args, **kwargs):

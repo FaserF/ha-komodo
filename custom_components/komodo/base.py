@@ -2,6 +2,7 @@ import asyncio
 import logging
 from typing import Any
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from komodo_api.lib import ApiKeyInitOptions, CancelToken, KomodoClient
 from komodo_api.types import GetVersion
@@ -42,11 +43,12 @@ class KomodoBase:
         host: str,
         init_options: ApiKeyInitOptions,
         entry_id: str | None = None,
+        config_entry: ConfigEntry | None = None,
     ) -> None:
         self.hass = hass
         self.entry_id = entry_id
         self.api = KomodoClient(host, init_options)
-        self.coordinator = KomodoCoordinator(hass, self.api)
+        self.coordinator = KomodoCoordinator(hass, self.api, config_entry=config_entry)
         self.coordinator.host_url = fix_host(host)
         self.container_categories = frozenset()
         self.ws_cancel_token = KomodoCancelToken()

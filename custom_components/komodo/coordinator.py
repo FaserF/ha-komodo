@@ -7,6 +7,7 @@ from datetime import timedelta
 from functools import partial
 from typing import Any
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from komodo_api.exceptions import KomodoException
@@ -36,7 +37,12 @@ _RELEASEPROBE_LOGGER = _LOGGER.getChild("releaseprobe")
 class KomodoCoordinator(DataUpdateCoordinator[KomodoData]):
     """Komodo coordinator."""
 
-    def __init__(self, hass: HomeAssistant, my_api: KomodoClient) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        my_api: KomodoClient,
+        config_entry: ConfigEntry | None = None,
+    ) -> None:
         """Initialize my coordinator."""
         super().__init__(
             hass,
@@ -44,8 +50,10 @@ class KomodoCoordinator(DataUpdateCoordinator[KomodoData]):
             # Name of the data. For logging purposes.
             name="KomodoData",
             update_interval=timedelta(minutes=1),
+            config_entry=config_entry,
         )
         self.my_api = my_api
+        self.config_entry = config_entry
         self.host_url: str | None = None
         self.komodo_version: str | None = None
         # Komodo server id -> device registry id, filled in during entry setup.

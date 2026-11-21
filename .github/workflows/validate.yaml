@@ -19,8 +19,8 @@ jobs:
     name: hassfest validate
     runs-on: "ubuntu-latest"
     steps:
-        - uses: "actions/checkout@v4"
-        - uses: "home-assistant/actions/hassfest@master"
+      - uses: "actions/checkout@v4"
+      - uses: "home-assistant/actions/hassfest@master"
 
       - name: Check Quality Scale
         run: |

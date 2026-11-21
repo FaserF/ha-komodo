@@ -29,8 +29,14 @@ def mock_base():
         mock_client.subscribe_to_update_websocket = AsyncMock()
         mock_client_cls.return_value = mock_client
 
+        mock_entry = MagicMock()
+        mock_entry.entry_id = "test_entry"
         base = KomodoBase(
-            hass, "http://localhost:9120", ApiKeyInitOptions("k", "s"), entry_id="test_entry"
+            hass,
+            "http://localhost:9120",
+            ApiKeyInitOptions("k", "s"),
+            entry_id="test_entry",
+            config_entry=mock_entry,
         )
         base.coordinator.async_request_refresh = AsyncMock()
         yield base
